@@ -7,8 +7,8 @@ const {Todo} = require('./../models/todo')
 const {User} = require('./../models/user')
 
 const todos = [
-    {_id: new ObjectID(), text:'First test todo'},
-    {_id: new ObjectID(), text:'Second test todo'}
+    {_id: new ObjectID(), text:'First test todo', completed: true, completedAt: 123},
+    {_id: new ObjectID(), text:'Second test todo', completed: false}
 ];
 
 beforeEach(done => {
@@ -122,6 +122,59 @@ describe('DELETE /todos/:id', () => {
     it('should return 404 for non-object ids', (done) => {
         request(app)
             .delete(`/todos/123`)
+            .expect(404)
+            .end(done)
+    })
+})
+
+describe('PATCH /todos/:id', () => {
+    it('should update todo doc', (done) => {
+        let hexid = todos[0]._id.toHexString();
+        let text = 'New text here';
+        request(app)
+            .patch(`/todos/${hexid}`)
+            .send({
+                text,
+                completed : true
+            })
+            .expect(200)
+            .expect(res => {
+                expect(res.body.todo.text).toBe(text);
+                expect(res.body.todo.completed).toBe(true);
+                expect(res.body.todo.completedAt).toBeA('number');
+            })
+            .end(done);
+    })
+
+    it('should clear completeAt when todo is not completed', (done) => {
+        let hexid = todos[1]._id.toHexString();
+        let text = 'New text here 234';
+        request(app)
+            .patch(`/todos/${hexid}`)
+            .send({
+                text,
+                completed : false
+            })
+            .expect(200)
+            .expect(res => {
+                expect(res.body.todo.text).toBe(text);
+                expect(res.body.todo.completed).toBe(false);
+                expect(res.body.todo.completedAt).toBe(null);
+            })
+            .end(done);
+    })
+
+    it('should return 404 if todo not found', (done) => {
+        let hexId = new ObjectID().toHexString();
+        request(app)
+            .patch(`/todos/${hexId}`)
+            .expect(404)
+            .end(done)
+    })
+
+    it('should return 404 for non-object ids', (done) => {
+        request(app)
+            .patch(`/todos/123`)
             .expect(404)
             .end(done)
     })
